@@ -1,0 +1,7 @@
+python-telegram-bot==20.7
+schedule==1.2.0
+python-dotenv==1.0.0
+python-json-logger==4.0.0
+dacite==0.0.13
+pandas==2.3.3
+numpy==2.3.3

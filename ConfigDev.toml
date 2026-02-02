@@ -1,0 +1,4 @@
+[main_config]
+logger_level = "DEBUG"
+logger_file_path = "data/logs/app.log"
+logger_json = True
