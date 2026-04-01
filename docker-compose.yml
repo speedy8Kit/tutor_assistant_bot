@@ -1,0 +1,69 @@
+version: '3.8'
+name: tutor-bot_0-1
+
+services:
+  dev:
+    container_name: tutor-bot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://abmine:abmine@postgres:5432/tutor_bot
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./:/app
+      - poetry-cache:/root/.cache/pypoetry
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tutor-network
+    stdin_open: true 
+    tty: true
+    command: bash
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: tutor-postgres
+    environment:
+      POSTGRES_DB: tutor_bot
+      POSTGRES_USER: abmine
+      POSTGRES_PASSWORD: abmine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tutor-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U abmine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tutor-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - tutor-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  poetry-cache:
+
+networks:
+  tutor-network:
+    driver: bridge

@@ -15,36 +15,37 @@ from telegram.ext import Application
 
 # Импортируем наши модули
 from tutors_assistant.database import Database
-from tutors_assistant.keyboards import get_main_keyboard
 from tutors_assistant.handlers.commands import setup_handlers
-from tutors_assistant.utils.helpers import setup_logging
 
 # Загружаем конфигурацию
 load_dotenv()
+
 
 class TutorBot:
     def __init__(self):
         self.token = os.getenv("TELEGRAM_TOKEN")
         if not self.token:
             raise ValueError("TELEGRAM_TOKEN не найден в .env файле")
-        
+
         self.db = Database()
         self.app = Application.builder().token(self.token).build()
-        
+
     def setup(self):
         """Настройка всех компонентов бота"""
         setup_handlers(self.app, self.db)
-        
+
     def run(self):
         """Запуск бота"""
         print("🤖 Запускаю Tutors Assistant...")
         self.app.run_polling(allowed_updates=None)
+
 
 def main():
     """Главная функция для запуска"""
     bot = TutorBot()
     bot.setup()
     bot.run()
+
 
 if __name__ == "__main__":
     main()

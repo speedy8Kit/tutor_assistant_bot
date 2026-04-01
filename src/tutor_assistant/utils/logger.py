@@ -11,7 +11,6 @@ from pythonjsonlogger import jsonlogger
 from bot.config import BASE_CONFIG
 
 
-
 _LEVEL_MAP = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
@@ -87,9 +86,7 @@ def get_logger(name: str = "app_logger") -> Logger:
 
     # file handler (optional)
     if log_file_path:
-        logger.addHandler(
-            _build_file_handler(log_file_path, level, log_format)
-        )
+        logger.addHandler(_build_file_handler(log_file_path, level, log_format))
 
     logger.is_configured = True
     return logger
