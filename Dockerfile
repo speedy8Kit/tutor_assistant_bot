@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-ENV PYTHONPATH=/app \
+ENV PYTHONPATH=/app/src \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 

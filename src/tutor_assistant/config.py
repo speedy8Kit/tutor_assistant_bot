@@ -8,7 +8,8 @@ from pathlib import Path
 import dacite
 from dotenv import dotenv_values
 
-from src.tutor_assistant.utils.logger import get_logger
+from tutor_assistant.logger_config import LOGGER_CONFIG, LoggerConfig
+from tutor_assistant.utils.logger import get_logger
 
 
 _env_config = {
@@ -37,15 +38,13 @@ class BotConfigs:
 
 @dataclass(frozen=True)
 class MainConfig:
-    logger_level: str
-    logger_json: bool = False
-    logger_file_path: str | None = None
+    logger_config: LoggerConfig = LOGGER_CONFIG
 
 
 @dataclass(frozen=True)
 class AppConfig:
     main_config: MainConfig
-    bot_config: BotConfigs
+    bot_config: BotConfigs = field(default_factory=BotConfigs)
 
 
 _config_file_name = _get_env_value("APP_CONFIG_FILE")

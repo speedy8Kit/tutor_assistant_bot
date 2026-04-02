@@ -1,51 +1,39 @@
-"""
-Основной модуль бота с правильными импортами.
-"""
+"""Builds and runs the Telegram Application."""
 
-import os
-import sys
-from pathlib import Path
+from __future__ import annotations
 
-# Добавляем корень проекта в sys.path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+from telegram.ext import Application, CommandHandler
 
-from dotenv import load_dotenv
-from telegram.ext import Application
+from tutor_assistant.config import BASE_CONFIG
+from tutor_assistant.database import init_db
+from tutor_assistant.handlers import build_add_student_handler, cancel, list_students, start
+from tutor_assistant.utils.logger import get_logger
 
-# Импортируем наши модули
-from tutors_assistant.database import Database
-from tutors_assistant.handlers.commands import setup_handlers
-
-# Загружаем конфигурацию
-load_dotenv()
+logger = get_logger()
 
 
-class TutorBot:
-    def __init__(self):
-        self.token = os.getenv("TELEGRAM_TOKEN")
-        if not self.token:
-            raise ValueError("TELEGRAM_TOKEN не найден в .env файле")
-
-        self.db = Database()
-        self.app = Application.builder().token(self.token).build()
-
-    def setup(self):
-        """Настройка всех компонентов бота"""
-        setup_handlers(self.app, self.db)
-
-    def run(self):
-        """Запуск бота"""
-        print("🤖 Запускаю Tutors Assistant...")
-        self.app.run_polling(allowed_updates=None)
+async def _post_init(application: Application) -> None:
+    try:
+        await init_db()
+    except Exception:
+        logger.exception("DB init failed")
+        raise
+    logger.info("Database initialised")
 
 
-def main():
-    """Главная функция для запуска"""
-    bot = TutorBot()
-    bot.setup()
-    bot.run()
+def _register_handlers(app: Application):
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("cancel", cancel))
+    app.add_handler(CommandHandler("list_students", list_students))
+    app.add_handler(build_add_student_handler())
+    return app
 
-
-if __name__ == "__main__":
-    main()
+def build_application() -> Application:
+    app = (
+        Application.builder()
+        .token(BASE_CONFIG.bot_config.bot_token)
+        .post_init(_post_init)
+        .build()
+    )
+    _register_handlers(app)
+    return app

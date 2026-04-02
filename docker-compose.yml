@@ -27,6 +27,26 @@ services:
     tty: true
     command: bash
 
+  inference:
+    container_name: tutor-bot-inference
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://abmine:abmine@postgres:5432/tutor_bot
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tutor-network
+    command: python -m tutor_assistant
+
   postgres:
     image: postgres:15-alpine
     container_name: tutor-postgres

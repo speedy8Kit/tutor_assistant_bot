@@ -1,5 +1,5 @@
 from telegram import Bot
-from config import BASE_CONFIG
+from tutor_assistant.config import BASE_CONFIG
 
 
 def init_bot() -> Bot:
