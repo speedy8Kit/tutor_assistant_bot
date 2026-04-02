@@ -16,7 +16,9 @@ async def list_students(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         students = await list_students_with_slots(session, tutor_chat_id=chat_id)
 
     if not students:
-        await update.message.reply_text("У тебя пока нет учеников. Добавь первого: /add_student")
+        await update.message.reply_text(
+            "У тебя пока нет учеников. Добавь первого: /add_student"
+        )
         return
 
     lines: list[str] = []
@@ -24,7 +26,9 @@ async def list_students(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if s.slots:
             slot_strs = [
                 f"{_DAY_NAMES[sl.day_of_week]} {sl.time_start:%H:%M}"
-                for sl in sorted(s.slots, key=lambda sl: (sl.day_of_week, sl.time_start))
+                for sl in sorted(
+                    s.slots, key=lambda sl: (sl.day_of_week, sl.time_start)
+                )
             ]
             schedule = ", ".join(slot_strs)
         else:

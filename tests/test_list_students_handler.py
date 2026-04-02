@@ -18,7 +18,9 @@ def _make_student(name: str, slots: list[tuple[int, datetime.time]]) -> MagicMoc
 
 
 class TestListStudents:
-    async def test_no_students_sends_hint(self, make_update, make_context, mock_db_session):
+    async def test_no_students_sends_hint(
+        self, make_update, make_context, mock_db_session
+    ):
         update = make_update(chat_id=1)
         session_cm, _ = mock_db_session
 
@@ -31,10 +33,14 @@ class TestListStudents:
         reply = update.message.reply_text.call_args[0][0]
         assert "/add_student" in reply
 
-    async def test_one_student_with_slots(self, make_update, make_context, mock_db_session):
+    async def test_one_student_with_slots(
+        self, make_update, make_context, mock_db_session
+    ):
         update = make_update(chat_id=1)
         session_cm, _ = mock_db_session
-        student = _make_student("Иван", [(0, datetime.time(14, 30)), (2, datetime.time(16, 0))])
+        student = _make_student(
+            "Иван", [(0, datetime.time(14, 30)), (2, datetime.time(16, 0))]
+        )
 
         with (
             patch(f"{_HANDLER_PATH}.async_session_factory", session_cm),
@@ -49,7 +55,9 @@ class TestListStudents:
         assert "Ср" in reply
         assert "16:00" in reply
 
-    async def test_student_without_slots_shows_placeholder(self, make_update, make_context, mock_db_session):
+    async def test_student_without_slots_shows_placeholder(
+        self, make_update, make_context, mock_db_session
+    ):
         update = make_update(chat_id=1)
         session_cm, _ = mock_db_session
         student = _make_student("Маша", [])
@@ -82,13 +90,17 @@ class TestListStudents:
         assert "Алёша" in reply
         assert "Саша" in reply
 
-    async def test_queries_by_correct_chat_id(self, make_update, make_context, mock_db_session):
+    async def test_queries_by_correct_chat_id(
+        self, make_update, make_context, mock_db_session
+    ):
         update = make_update(chat_id=42)
         session_cm, mock_session = mock_db_session
 
         with (
             patch(f"{_HANDLER_PATH}.async_session_factory", session_cm),
-            patch(f"{_HANDLER_PATH}.list_students_with_slots", return_value=[]) as mock_query,
+            patch(
+                f"{_HANDLER_PATH}.list_students_with_slots", return_value=[]
+            ) as mock_query,
         ):
             await list_students(update, make_context())
 

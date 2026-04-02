@@ -13,6 +13,7 @@ from telegram.ext import ContextTypes
 @pytest.fixture
 def make_update():
     """Factory that returns a mocked telegram Update."""
+
     def _factory(text: str = "", chat_id: int = 111) -> MagicMock:
         update = MagicMock(spec=Update)
         update.message = MagicMock()
@@ -28,6 +29,7 @@ def make_update():
 @pytest.fixture
 def make_context():
     """Factory that returns a mocked handler context."""
+
     def _factory(user_data: dict | None = None) -> MagicMock:
         ctx = MagicMock(spec=ContextTypes.DEFAULT_TYPE)
         ctx.user_data = user_data if user_data is not None else {}

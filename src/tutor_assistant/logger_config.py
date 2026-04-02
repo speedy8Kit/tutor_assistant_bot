@@ -43,9 +43,7 @@ class LoggerConfig:
             logger_file_level=main_config.get("logger_file_level", "INFO"),
             logger_file_path=main_config.get("logger_file_path"),
             logger_console_level=main_config.get("logger_console_level", "INFO"),
-            logger_consele_ignored=main_config.get(
-                "logger_consele_ignored"
-            ),
+            logger_consele_ignored=main_config.get("logger_consele_ignored"),
         )
 
 

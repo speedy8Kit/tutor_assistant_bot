@@ -14,7 +14,6 @@ from pythonjsonlogger import jsonlogger
 from tutor_assistant.logger_config import LOGGER_CONFIG
 
 
-
 class _StramColorFormatter(logging.Formatter):
     """Форматирование логов с цветами ANSI для терминала.
 
@@ -70,9 +69,10 @@ _LEVEL_MAP = {
     "critical": logging.CRITICAL,
 }
 
+
 class JsonlFormatter(logging.Formatter):
     """Пишет dict как JSON строку.
-    
+
     Пока под вопросом
     """
 
@@ -109,16 +109,12 @@ def _build_stream_handler(level: int) -> logging.Handler:
     return handler
 
 
-def _build_file_handler(
-    path: str, level: int
-) -> logging.Handler:
+def _build_file_handler(path: str, level: int) -> logging.Handler:
     if Path(path).parent:
         Path.mkdir(Path(path).parent, exist_ok=True, parents=True)
     handler = logging.FileHandler(path, encoding="utf-8")
     handler.setLevel(level)
-    formatter = Utf8JsonFormatter(
-        "%(asctime)s %(levelname)s %(name)s %(message)s"
-    )
+    formatter = Utf8JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
     handler.setFormatter(formatter)
     return handler
 

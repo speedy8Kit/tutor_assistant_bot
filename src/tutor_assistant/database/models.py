@@ -33,9 +33,14 @@ class ScheduleSlot(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     student_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True
+        BigInteger,
+        ForeignKey("students.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
-    day_of_week: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # 0=Mon … 6=Sun
+    day_of_week: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False
+    )  # 0=Mon … 6=Sun
     time_start: Mapped[datetime.time] = mapped_column(Time, nullable=False)
 
     student: Mapped[Student] = relationship("Student", back_populates="slots")

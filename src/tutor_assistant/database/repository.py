@@ -31,7 +31,9 @@ async def add_slots(
     return objects
 
 
-async def list_students_with_slots(session: AsyncSession, tutor_chat_id: int) -> list[Student]:
+async def list_students_with_slots(
+    session: AsyncSession, tutor_chat_id: int
+) -> list[Student]:
     result = await session.execute(
         select(Student)
         .where(Student.tutor_chat_id == tutor_chat_id)

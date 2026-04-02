@@ -22,7 +22,9 @@ _HANDLER_PATH = "tutor_assistant.handlers.add_student"
 
 
 class TestAddStudentStart:
-    async def test_clears_user_data_and_returns_ask_name(self, make_update, make_context):
+    async def test_clears_user_data_and_returns_ask_name(
+        self, make_update, make_context
+    ):
         update = make_update()
         ctx = make_context(user_data={"leftover": "data"})
 
@@ -53,7 +55,9 @@ class TestReceivedName:
 
 
 class TestReceivedSlot:
-    async def test_valid_slot_appended_stays_in_ask_slots(self, make_update, make_context):
+    async def test_valid_slot_appended_stays_in_ask_slots(
+        self, make_update, make_context
+    ):
         ctx = make_context(user_data={"slots": []})
         state = await received_slot(make_update(text="ПН 14:30"), ctx)
 
@@ -99,7 +103,9 @@ class TestSlotsDone:
 
 
 class TestConfirmed:
-    async def test_writes_to_db_and_returns_end(self, make_update, make_context, mock_db_session):
+    async def test_writes_to_db_and_returns_end(
+        self, make_update, make_context, mock_db_session
+    ):
         slots = [(0, datetime.time(14, 30))]
         update = make_update(chat_id=999)
         ctx = make_context(user_data={"student_name": "Денис", "slots": slots})
@@ -110,17 +116,27 @@ class TestConfirmed:
 
         with (
             patch(f"{_HANDLER_PATH}.async_session_factory", session_cm),
-            patch(f"{_HANDLER_PATH}.add_student", return_value=mock_student) as mock_add_student,
+            patch(
+                f"{_HANDLER_PATH}.add_student", return_value=mock_student
+            ) as mock_add_student,
             patch(f"{_HANDLER_PATH}.add_slots") as mock_add_slots,
         ):
             state = await confirmed(update, ctx)
 
         assert state == ConversationHandler.END
-        mock_add_student.assert_awaited_once_with(mock_session, name="Денис", tutor_chat_id=999)
-        mock_add_slots.assert_awaited_once_with(mock_session, student_id=42, slots=slots)
+        mock_add_student.assert_awaited_once_with(
+            mock_session, name="Денис", tutor_chat_id=999
+        )
+        mock_add_slots.assert_awaited_once_with(
+            mock_session, student_id=42, slots=slots
+        )
 
-    async def test_clears_user_data_after_save(self, make_update, make_context, mock_db_session):
-        ctx = make_context(user_data={"student_name": "Ольга", "slots": [(1, datetime.time(10, 0))]})
+    async def test_clears_user_data_after_save(
+        self, make_update, make_context, mock_db_session
+    ):
+        ctx = make_context(
+            user_data={"student_name": "Ольга", "slots": [(1, datetime.time(10, 0))]}
+        )
         session_cm, _ = mock_db_session
 
         mock_student = MagicMock()
@@ -135,8 +151,12 @@ class TestConfirmed:
 
         assert ctx.user_data == {}
 
-    async def test_success_message_contains_student_name(self, make_update, make_context, mock_db_session):
-        ctx = make_context(user_data={"student_name": "Василий", "slots": [(3, datetime.time(11, 0))]})
+    async def test_success_message_contains_student_name(
+        self, make_update, make_context, mock_db_session
+    ):
+        ctx = make_context(
+            user_data={"student_name": "Василий", "slots": [(3, datetime.time(11, 0))]}
+        )
         update = make_update(chat_id=1)
         session_cm, _ = mock_db_session
 

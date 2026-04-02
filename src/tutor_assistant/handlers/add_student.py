@@ -21,7 +21,13 @@ from tutor_assistant.handlers.common import cancel
 ASK_NAME, ASK_SLOTS, CONFIRM = range(3)
 
 _DAY_MAP: dict[str, int] = {
-    "ПН": 0, "ВТ": 1, "СР": 2, "ЧТ": 3, "ПТ": 4, "СБ": 5, "ВС": 6,
+    "ПН": 0,
+    "ВТ": 1,
+    "СР": 2,
+    "ЧТ": 3,
+    "ПТ": 4,
+    "СБ": 5,
+    "ВС": 6,
 }
 _DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
 _SLOT_RE = re.compile(r"^(ПН|ВТ|СР|ЧТ|ПТ|СБ|ВС)\s+(\d{1,2}):(\d{2})$", re.IGNORECASE)
