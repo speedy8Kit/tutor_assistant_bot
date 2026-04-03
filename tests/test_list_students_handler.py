@@ -5,9 +5,9 @@ from __future__ import annotations
 import datetime
 from unittest.mock import MagicMock, patch
 
-from tutor_assistant.handlers.list_students import list_students
+from tutor_assistant.application.handlers.list_students import list_students
 
-_HANDLER_PATH = "tutor_assistant.handlers.list_students"
+_HANDLER_PATH = "tutor_assistant.application.handlers.list_students"
 
 
 def _make_student(name: str, slots: list[tuple[int, datetime.time]]) -> MagicMock:

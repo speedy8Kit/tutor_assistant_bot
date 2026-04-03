@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from tutor_assistant.database.models import ScheduleSlot, Student
+from tutor_assistant.infrastructure.database.models import ScheduleSlot, Student
 
 
 async def add_student(session: AsyncSession, name: str, tutor_chat_id: int) -> Student:

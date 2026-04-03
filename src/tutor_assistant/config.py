@@ -9,7 +9,7 @@ import dacite
 from dotenv import dotenv_values
 
 from tutor_assistant.logger_config import LOGGER_CONFIG, LoggerConfig
-from tutor_assistant.utils.logger import get_logger
+from tutor_assistant.infrastructure.logging.logger import get_logger
 
 
 _env_config = {

@@ -1,6 +1,6 @@
 """Entry point: python -m tutor_assistant"""
 
-from tutor_assistant.bot import build_application
+from tutor_assistant.application.bot import build_application
 
 
 def main() -> None:

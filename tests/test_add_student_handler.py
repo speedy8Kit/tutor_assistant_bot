@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from telegram.ext import ConversationHandler
 
-from tutor_assistant.handlers.add_student import (
+from tutor_assistant.application.handlers.add_student import (
     ASK_NAME,
     ASK_SLOTS,
     CONFIRM,
@@ -18,7 +18,7 @@ from tutor_assistant.handlers.add_student import (
     slots_done,
 )
 
-_HANDLER_PATH = "tutor_assistant.handlers.add_student"
+_SERVICE_PATH = "tutor_assistant.application.services.students_service"
 
 
 class TestAddStudentStart:
@@ -115,11 +115,11 @@ class TestConfirmed:
         mock_student.id = 42
 
         with (
-            patch(f"{_HANDLER_PATH}.async_session_factory", session_cm),
+            patch(f"{_SERVICE_PATH}.async_session_factory", session_cm),
             patch(
-                f"{_HANDLER_PATH}.add_student", return_value=mock_student
+                f"{_SERVICE_PATH}.add_student", return_value=mock_student
             ) as mock_add_student,
-            patch(f"{_HANDLER_PATH}.add_slots") as mock_add_slots,
+            patch(f"{_SERVICE_PATH}.add_slots") as mock_add_slots,
         ):
             state = await confirmed(update, ctx)
 
@@ -143,9 +143,9 @@ class TestConfirmed:
         mock_student.id = 7
 
         with (
-            patch(f"{_HANDLER_PATH}.async_session_factory", session_cm),
-            patch(f"{_HANDLER_PATH}.add_student", return_value=mock_student),
-            patch(f"{_HANDLER_PATH}.add_slots"),
+            patch(f"{_SERVICE_PATH}.async_session_factory", session_cm),
+            patch(f"{_SERVICE_PATH}.add_student", return_value=mock_student),
+            patch(f"{_SERVICE_PATH}.add_slots"),
         ):
             await confirmed(make_update(chat_id=1), ctx)
 
@@ -164,9 +164,9 @@ class TestConfirmed:
         mock_student.id = 5
 
         with (
-            patch(f"{_HANDLER_PATH}.async_session_factory", session_cm),
-            patch(f"{_HANDLER_PATH}.add_student", return_value=mock_student),
-            patch(f"{_HANDLER_PATH}.add_slots"),
+            patch(f"{_SERVICE_PATH}.async_session_factory", session_cm),
+            patch(f"{_SERVICE_PATH}.add_student", return_value=mock_student),
+            patch(f"{_SERVICE_PATH}.add_slots"),
         ):
             await confirmed(update, ctx)
 

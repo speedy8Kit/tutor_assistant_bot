@@ -2,7 +2,7 @@
 
 import datetime
 
-from tutor_assistant.handlers.add_student import _format_slots, _parse_slot
+from tutor_assistant.application.handlers.add_student import _format_slots, _parse_slot
 
 
 class TestParseSlot:
