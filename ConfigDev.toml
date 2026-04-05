@@ -1,0 +1,5 @@
+[main_config.logger_config]
+logger_file_level = "DEBUG"
+logger_file_path = "data/logs/app.log"
+logger_console_level = "DEBUG"
+logger_console_ignored = []

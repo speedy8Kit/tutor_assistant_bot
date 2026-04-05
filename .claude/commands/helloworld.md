@@ -1,0 +1,1 @@
+Greet the user by name. Say "Hello, $ARGUMENTS!" in a friendly way.

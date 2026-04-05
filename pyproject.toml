@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "tutor-bot"
+version = "0.1.0"
+description = "Telegram bot for private tutors"
+authors = ["Your Name <your@email.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [{include = "tutor_assistant", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-telegram-bot = {extras = ["job-queue"], version = "^20.7"}
+python-dotenv = "^1.0.0"
+dacite = "^1.8"
+sqlalchemy = "^2.0.0"
+asyncpg = "^0.29.0"
+redis = {extras = ["hiredis"], version = "^5.0.0"}
+alembic = "^1.13.0"
+loguru = "^0.7.0"
+pandas = "^3.0.0"
+python-json-logger = "^2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.1.0"
+black = "^23.0.0"
+isort = "^5.12.0"
+mypy = "^1.0.0"
+ruff = "^0.1.0"
+ipython = "^8.0.0"
+
+[tool.poetry.scripts]
+tutor-bot = "tutor_assistant.__main__:run_bot"
+tutor-cli = "tutor_assistant.application.handlers.cli.bot_int:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "integration: tests that require a live PostgreSQL connection",
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
