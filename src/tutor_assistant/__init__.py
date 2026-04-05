@@ -1,6 +1,0 @@
-"""
-Tutors Assistant - Telegram bot for private tutors schedule management.
-"""
-
-__version__ = "0.1.0"
-__author__ = "Kit"

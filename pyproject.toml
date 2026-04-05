@@ -30,10 +30,17 @@ mypy = "^1.0.0"
 ruff = "^0.1.0"
 ipython = "^8.0.0"
 
+[tool.poetry.scripts]
+tutor-bot = "tutor_assistant.__main__:run_bot"
+tutor-cli = "tutor_assistant.application.handlers.cli.bot_int:main"
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "integration: tests that require a live PostgreSQL connection",
+]
 
 [build-system]
 requires = ["poetry-core"]

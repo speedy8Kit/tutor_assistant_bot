@@ -8,7 +8,7 @@ from pathlib import Path
 import dacite
 from dotenv import dotenv_values
 
-from tutor_assistant.logger_config import LOGGER_CONFIG, LoggerConfig
+from tutor_assistant.config_logs import LOGGER_CONFIG, LoggerConfig
 from tutor_assistant.infrastructure.logging.logger import get_logger
 
 

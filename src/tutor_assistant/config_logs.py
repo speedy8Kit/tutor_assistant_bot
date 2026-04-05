@@ -31,7 +31,7 @@ class LoggerConfig:
     logger_file_level: str = "INFO"
     logger_file_path: str | None = None
     logger_console_level: str = "INFO"
-    logger_consele_ignored: list[str] | None = None
+    logger_console_ignored: list[str] | None = None
 
     @classmethod
     def from_toml(cls, config_path: str | Path) -> "LoggerConfig":
@@ -43,7 +43,7 @@ class LoggerConfig:
             logger_file_level=main_config.get("logger_file_level", "INFO"),
             logger_file_path=main_config.get("logger_file_path"),
             logger_console_level=main_config.get("logger_console_level", "INFO"),
-            logger_consele_ignored=main_config.get("logger_consele_ignored"),
+            logger_console_ignored=main_config.get("logger_console_ignored"),
         )
 
 

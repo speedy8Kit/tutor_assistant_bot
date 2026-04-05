@@ -1,4 +1,7 @@
-from tutor_assistant.infrastructure.database.engine import async_session_factory
+from tutor_assistant.infrastructure.database.engine import (
+    async_session_factory,
+    init_db,
+)
 from tutor_assistant.infrastructure.database.repository import (
     add_slots,
     add_student,
@@ -10,4 +13,5 @@ __all__ = [
     "add_student",
     "add_slots",
     "list_students_with_slots",
+    "init_db",
 ]

@@ -11,10 +11,10 @@ from typing import ClassVar
 
 from pythonjsonlogger import jsonlogger
 
-from tutor_assistant.logger_config import LOGGER_CONFIG
+from tutor_assistant.config_logs import LOGGER_CONFIG
 
 
-class _StramColorFormatter(logging.Formatter):
+class _StreamColorFormatter(logging.Formatter):
     """Форматирование логов с цветами ANSI для терминала.
 
     Добавляет цветовое выделение в зависимости от уровня логирования
@@ -105,7 +105,7 @@ def _resolve_level(value: str | None, fallback: int = logging.INFO) -> int:
 def _build_stream_handler(level: int) -> logging.Handler:
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(level)
-    handler.setFormatter(_StramColorFormatter())
+    handler.setFormatter(_StreamColorFormatter())
     return handler
 
 
@@ -132,7 +132,7 @@ def get_logger(name: str = "app_logger") -> Logger:
     logger.setLevel(level)
     logger.propagate = False
 
-    ignored = LOGGER_CONFIG.logger_consele_ignored or []
+    ignored = LOGGER_CONFIG.logger_console_ignored or []
     if name not in ignored:
         logger.addHandler(_build_stream_handler(level))
 
