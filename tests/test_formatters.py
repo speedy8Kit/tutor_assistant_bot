@@ -5,13 +5,16 @@ from __future__ import annotations
 import datetime
 
 
+from tutor_assistant.application.use_cases.schedule import ScheduledSlot
 from tutor_assistant.domain.entities import SlotData, StudentData
 from tutor_assistant.interfaces.shared.formatters import (
-    format_student_list,
-    format_student_card,
-    format_schedule,
     format_conflicts,
+    format_schedule,
+    format_student_card,
+    format_student_list,
     format_student_names_list,
+    format_today_schedule,
+    format_upcoming_schedule,
     html_strip,
 )
 
@@ -111,3 +114,83 @@ class TestFormatStudentNamesList:
         result = format_student_names_list(students)
         assert "1. А" in result
         assert "2. Б" in result
+
+
+def _make_scheduled(
+    student_name: str,
+    day: int,
+    hour: int,
+    minute: int,
+    date: datetime.date,
+    dur: int = 60,
+) -> ScheduledSlot:
+    slot = SlotData(
+        day_of_week=day,
+        time_start=datetime.time(hour, minute),
+        duration_minutes=dur,
+        student_name=student_name,
+    )
+    return ScheduledSlot(
+        slot=slot,
+        date=date,
+        datetime_start=datetime.datetime.combine(date, slot.time_start),
+    )
+
+
+_MON = datetime.date(2026, 4, 6)  # Monday
+_WED = datetime.date(2026, 4, 8)  # Wednesday
+
+
+class TestFormatTodaySchedule:
+    def test_empty(self):
+        assert format_today_schedule([]) == ""
+
+    def test_single_entry(self):
+        items = [_make_scheduled("Аня", 0, 10, 0, _MON)]
+        result = html_strip(format_today_schedule(items))
+        assert "1." in result
+        assert "Аня" in result
+        assert "10:00" in result
+        assert "60 мин" in result
+
+    def test_numbered(self):
+        items = [
+            _make_scheduled("Аня", 0, 9, 0, _MON),
+            _make_scheduled("Боря", 0, 11, 0, _MON),
+        ]
+        result = format_today_schedule(items)
+        assert "1." in result
+        assert "2." in result
+
+    def test_unknown_name_fallback(self):
+        slot = SlotData(day_of_week=0, time_start=datetime.time(10, 0))
+        item = ScheduledSlot(slot=slot, date=_MON, datetime_start=datetime.datetime(2026, 4, 6, 10))
+        result = html_strip(format_today_schedule([item]))
+        assert "?" in result
+
+
+class TestFormatUpcomingSchedule:
+    def test_empty(self):
+        assert format_upcoming_schedule([]) == ""
+
+    def test_groups_by_date(self):
+        items = [
+            _make_scheduled("Аня", 0, 10, 0, _MON),
+            _make_scheduled("Боря", 2, 11, 0, _WED),
+        ]
+        result = html_strip(format_upcoming_schedule(items))
+        assert "Аня" in result
+        assert "Боря" in result
+        # Both dates should appear
+        assert "06.04" in result
+        assert "08.04" in result
+
+    def test_day_name_in_header(self):
+        items = [_make_scheduled("Аня", 0, 10, 0, _MON)]
+        result = format_upcoming_schedule(items)
+        assert "Пн" in result
+
+    def test_no_trailing_blank_line(self):
+        items = [_make_scheduled("Аня", 0, 10, 0, _MON)]
+        result = format_upcoming_schedule(items)
+        assert not result.endswith("\n")

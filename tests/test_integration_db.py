@@ -9,14 +9,15 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import delete
 
-from tutor_assistant.domain.entities import SlotData, StudentData
+from tutor_assistant.domain.entities import ChatSettingsData, SlotData, StudentData
 from tutor_assistant.infrastructure.database import engine as _eng
 from tutor_assistant.infrastructure.database.engine import (
     async_session_factory,
     init_db,
 )
-from tutor_assistant.infrastructure.database.models import Student
+from tutor_assistant.infrastructure.database.models import ChatSettings, Student
 from tutor_assistant.infrastructure.database.repository import (
+    SqlAlchemyChatSettingsRepository,
     SqlAlchemyStudentRepository,
 )
 
@@ -49,6 +50,17 @@ async def clean_tutor():
         async with session.begin():
             await session.execute(
                 delete(Student).where(Student.tutor_chat_id == tutor_id)
+            )
+
+
+@pytest_asyncio.fixture
+async def clean_settings():
+    chat_id = 888_777
+    yield chat_id
+    async with async_session_factory() as session:
+        async with session.begin():
+            await session.execute(
+                delete(ChatSettings).where(ChatSettings.chat_id == chat_id)
             )
 
 
@@ -207,3 +219,89 @@ async def test_schema_has_new_columns(clean_tutor):
     assert created.comment == "тест"
     assert created.telegram_link == "@test"
     assert created.slots[0].duration_minutes == 90
+
+
+@pytest.mark.asyncio
+async def test_chat_settings_upsert_and_get(clean_settings):
+    chat_id = clean_settings
+
+    data = ChatSettingsData(
+        chat_id=chat_id,
+        daily_reminder_enabled=True,
+        daily_reminder_time=datetime.time(7, 30),
+        pre_class_reminder_enabled=False,
+        pre_class_reminder_minutes=None,
+    )
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            saved = await repo.upsert(data)
+
+    assert saved.daily_reminder_enabled is True
+    assert saved.daily_reminder_time == datetime.time(7, 30)
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            fetched = await repo.get(chat_id)
+
+    assert fetched is not None
+    assert fetched.daily_reminder_time == datetime.time(7, 30)
+
+
+@pytest.mark.asyncio
+async def test_chat_settings_upsert_updates_existing(clean_settings):
+    chat_id = clean_settings
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            await repo.upsert(ChatSettingsData(chat_id=chat_id, daily_reminder_enabled=True))
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            await repo.upsert(
+                ChatSettingsData(
+                    chat_id=chat_id,
+                    daily_reminder_enabled=False,
+                    pre_class_reminder_enabled=True,
+                    pre_class_reminder_minutes=30,
+                )
+            )
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            fetched = await repo.get(chat_id)
+
+    assert fetched.daily_reminder_enabled is False
+    assert fetched.pre_class_reminder_enabled is True
+    assert fetched.pre_class_reminder_minutes == 30
+
+
+@pytest.mark.asyncio
+async def test_chat_settings_get_returns_none_when_missing(clean_settings):
+    chat_id = clean_settings
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            result = await repo.get(chat_id)
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_chat_settings_list_all(clean_settings):
+    chat_id = clean_settings
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            await repo.upsert(ChatSettingsData(chat_id=chat_id, pre_class_reminder_enabled=True))
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            all_settings = await repo.list_all()
+
+    assert any(s.chat_id == chat_id for s in all_settings)

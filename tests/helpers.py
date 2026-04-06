@@ -1,8 +1,8 @@
-"""In-memory IStudentRepository implementation for unit tests."""
+"""In-memory repository implementations for unit tests."""
 
 from __future__ import annotations
 
-from tutor_assistant.domain.entities import SlotData, StudentData
+from tutor_assistant.domain.entities import ChatSettingsData, SlotData, StudentData
 
 
 class InMemoryStudentRepository:
@@ -112,3 +112,20 @@ class InMemoryStudentRepository:
             telegram_link=s.telegram_link,
             slots=new_slots,
         )
+
+
+class InMemoryChatSettingsRepository:
+    """Simple dict-based repository implementing IChatSettingsRepository protocol."""
+
+    def __init__(self) -> None:
+        self._data: dict[int, ChatSettingsData] = {}
+
+    async def get(self, chat_id: int) -> ChatSettingsData | None:
+        return self._data.get(chat_id)
+
+    async def upsert(self, data: ChatSettingsData) -> ChatSettingsData:
+        self._data[data.chat_id] = data
+        return data
+
+    async def list_all(self) -> list[ChatSettingsData]:
+        return list(self._data.values())
