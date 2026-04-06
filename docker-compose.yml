@@ -45,7 +45,7 @@ services:
         condition: service_healthy
     networks:
       - tutor-network
-    command: python -m tutor_assistant bot
+    command: python -m tutor_assistant
 
   postgres:
     image: postgres:15-alpine

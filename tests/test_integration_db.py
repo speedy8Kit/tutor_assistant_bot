@@ -1,8 +1,4 @@
-"""Integration tests: real DB, real schema, real CRUD.
-
-Run only when DATABASE_URL is available (skipped otherwise):
-    docker exec tutor-bot pytest tests/test_integration_db.py -v
-"""
+"""Integration tests — require a real PostgreSQL database via DATABASE_URL."""
 
 from __future__ import annotations
 
@@ -10,43 +6,46 @@ import datetime
 import os
 
 import pytest
+import pytest_asyncio
+from sqlalchemy import delete
 
-pytestmark = pytest.mark.integration
+from tutor_assistant.domain.entities import ChatSettingsData, SlotData, StudentData
+from tutor_assistant.infrastructure.database import engine as _eng
+from tutor_assistant.infrastructure.database.engine import (
+    async_session_factory,
+    init_db,
+)
+from tutor_assistant.infrastructure.database.models import ChatSettings, Student
+from tutor_assistant.infrastructure.database.repository import (
+    SqlAlchemyChatSettingsRepository,
+    SqlAlchemyStudentRepository,
+)
 
 
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def _fresh_engine():
-    """Give each test a fresh engine+pool to avoid event-loop/connection reuse across tests."""
     if not os.environ.get("DATABASE_URL"):
         pytest.skip("DATABASE_URL not set — skipping integration tests")
-    import tutor_assistant.infrastructure.database.engine as _eng
 
-    # Dispose stale engine from previous test
     if _eng._engine is not None:
         await _eng._engine.dispose()
         _eng._engine = None
+    if _eng._session_maker is not None:
         _eng._session_maker = None
-    from tutor_assistant.infrastructure.database.engine import init_db
 
     await init_db()
     yield
-    # Dispose after test so the event loop can close cleanly
+
     if _eng._engine is not None:
         await _eng._engine.dispose()
         _eng._engine = None
-        _eng._session_maker = None
+    _eng._session_maker = None
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def clean_tutor():
-    """Provide an isolated tutor_id and clean up students after each test."""
-    tutor_id = 777_999  # unlikely to collide with real data
+    tutor_id = 777_999
     yield tutor_id
-    # Teardown: delete all test students
-    from tutor_assistant.infrastructure.database.engine import async_session_factory
-    from tutor_assistant.infrastructure.database.models import Student
-    from sqlalchemy import delete
-
     async with async_session_factory() as session:
         async with session.begin():
             await session.execute(
@@ -54,89 +53,259 @@ async def clean_tutor():
             )
 
 
-class TestSchema:
-    async def test_init_db_creates_students_table_with_name_column(self):
-        """Catches schema drift: column 'name' must exist (not 'age' or anything else)."""
-        from tutor_assistant.infrastructure.database.engine import async_session_factory
-        from sqlalchemy import text
+@pytest_asyncio.fixture
+async def clean_settings():
+    chat_id = 888_777
+    yield chat_id
+    async with async_session_factory() as session:
+        async with session.begin():
+            await session.execute(
+                delete(ChatSettings).where(ChatSettings.chat_id == chat_id)
+            )
 
-        async with async_session_factory() as session:
-            result = await session.execute(
-                text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_name = 'students' ORDER BY column_name"
+
+@pytest.mark.asyncio
+async def test_create_and_list(clean_tutor):
+    tutor_id = clean_tutor
+    slot = SlotData(
+        day_of_week=0, time_start=datetime.time(14, 30), duration_minutes=60
+    )
+    data = StudentData(name="Тест", tutor_chat_id=tutor_id, slots=[slot])
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            created = await repo.create(data)
+
+    assert created.id is not None
+    assert created.name == "Тест"
+    assert len(created.slots) == 1
+    assert created.slots[0].duration_minutes == 60
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            students = await repo.list_all(tutor_id)
+
+    assert len(students) == 1
+    assert students[0].name == "Тест"
+
+
+@pytest.mark.asyncio
+async def test_optional_fields_stored(clean_tutor):
+    tutor_id = clean_tutor
+    data = StudentData(
+        name="Контакт",
+        tutor_chat_id=tutor_id,
+        phone="+7999",
+        full_name="Иван Иванов",
+        comment="VIP",
+        telegram_link="@ivan",
+    )
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            created = await repo.create(data)
+
+    assert created.phone == "+7999"
+    assert created.full_name == "Иван Иванов"
+    assert created.comment == "VIP"
+    assert created.telegram_link == "@ivan"
+
+
+@pytest.mark.asyncio
+async def test_get_by_name(clean_tutor):
+    tutor_id = clean_tutor
+    data = StudentData(name="Поиск", tutor_chat_id=tutor_id)
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            await repo.create(data)
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            found = await repo.get_by_name(tutor_id, "Поиск")
+            not_found = await repo.get_by_name(tutor_id, "Нет")
+
+    assert found is not None
+    assert found.name == "Поиск"
+    assert not_found is None
+
+
+@pytest.mark.asyncio
+async def test_update_student(clean_tutor):
+    tutor_id = clean_tutor
+    data = StudentData(name="Старое", tutor_chat_id=tutor_id)
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            created = await repo.create(data)
+            updated = await repo.update(created.id, name="Новое", phone="+7000")
+
+    assert updated.name == "Новое"
+    assert updated.phone == "+7000"
+
+
+@pytest.mark.asyncio
+async def test_delete_student(clean_tutor):
+    tutor_id = clean_tutor
+    data = StudentData(name="Удалить", tutor_chat_id=tutor_id)
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            created = await repo.create(data)
+            await repo.delete(created.id)
+            students = await repo.list_all(tutor_id)
+
+    assert students == []
+
+
+@pytest.mark.asyncio
+async def test_replace_slots(clean_tutor):
+    tutor_id = clean_tutor
+    old_slot = SlotData(
+        day_of_week=0, time_start=datetime.time(10, 0), duration_minutes=60
+    )
+    data = StudentData(name="Расписание", tutor_chat_id=tutor_id, slots=[old_slot])
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            created = await repo.create(data)
+            new_slot = SlotData(
+                day_of_week=2, time_start=datetime.time(14, 0), duration_minutes=90
+            )
+            await repo.replace_slots(created.id, [new_slot])
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            student = await repo.get_by_name(tutor_id, "Расписание")
+
+    assert student is not None
+    assert len(student.slots) == 1
+    assert student.slots[0].day_of_week == 2
+    assert student.slots[0].duration_minutes == 90
+
+
+@pytest.mark.asyncio
+async def test_schema_has_new_columns(clean_tutor):
+    """Verify all expected columns exist in the database schema."""
+    tutor_id = clean_tutor
+    data = StudentData(
+        name="Схема",
+        tutor_chat_id=tutor_id,
+        phone="+7000",
+        full_name="Тест Тестов",
+        comment="тест",
+        telegram_link="@test",
+        slots=[
+            SlotData(day_of_week=1, time_start=datetime.time(9, 0), duration_minutes=90)
+        ],
+    )
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyStudentRepository(session)
+            created = await repo.create(data)
+
+    assert created.phone == "+7000"
+    assert created.full_name == "Тест Тестов"
+    assert created.comment == "тест"
+    assert created.telegram_link == "@test"
+    assert created.slots[0].duration_minutes == 90
+
+
+@pytest.mark.asyncio
+async def test_chat_settings_upsert_and_get(clean_settings):
+    chat_id = clean_settings
+
+    data = ChatSettingsData(
+        chat_id=chat_id,
+        daily_reminder_enabled=True,
+        daily_reminder_time=datetime.time(7, 30),
+        pre_class_reminder_enabled=False,
+        pre_class_reminder_minutes=None,
+    )
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            saved = await repo.upsert(data)
+
+    assert saved.daily_reminder_enabled is True
+    assert saved.daily_reminder_time == datetime.time(7, 30)
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            fetched = await repo.get(chat_id)
+
+    assert fetched is not None
+    assert fetched.daily_reminder_time == datetime.time(7, 30)
+
+
+@pytest.mark.asyncio
+async def test_chat_settings_upsert_updates_existing(clean_settings):
+    chat_id = clean_settings
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            await repo.upsert(
+                ChatSettingsData(chat_id=chat_id, daily_reminder_enabled=True)
+            )
+
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            await repo.upsert(
+                ChatSettingsData(
+                    chat_id=chat_id,
+                    daily_reminder_enabled=False,
+                    pre_class_reminder_enabled=True,
+                    pre_class_reminder_minutes=30,
                 )
             )
-            columns = {row[0] for row in result}
-        assert (
-            "name" in columns
-        ), f"Column 'name' missing from students. Found: {columns}"
-        assert "tutor_chat_id" in columns
-        assert "created_at" in columns
 
-    async def test_init_db_creates_schedule_slots_table(self):
-        from tutor_assistant.infrastructure.database.engine import async_session_factory
-        from sqlalchemy import text
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            fetched = await repo.get(chat_id)
 
-        async with async_session_factory() as session:
-            result = await session.execute(
-                text(
-                    "SELECT column_name FROM information_schema.columns "
-                    "WHERE table_name = 'schedule_slots' ORDER BY column_name"
-                )
+    assert fetched.daily_reminder_enabled is False
+    assert fetched.pre_class_reminder_enabled is True
+    assert fetched.pre_class_reminder_minutes == 30
+
+
+@pytest.mark.asyncio
+async def test_chat_settings_get_returns_none_when_missing(clean_settings):
+    chat_id = clean_settings
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            result = await repo.get(chat_id)
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_chat_settings_list_all(clean_settings):
+    chat_id = clean_settings
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            await repo.upsert(
+                ChatSettingsData(chat_id=chat_id, pre_class_reminder_enabled=True)
             )
-            columns = {row[0] for row in result}
-        assert "day_of_week" in columns
-        assert "time_start" in columns
-        assert "student_id" in columns
 
+    async with async_session_factory() as session:
+        async with session.begin():
+            repo = SqlAlchemyChatSettingsRepository(session)
+            all_settings = await repo.list_all()
 
-class TestStudentCRUD:
-    async def test_create_and_list_student(self, clean_tutor):
-        from tutor_assistant.application.services.students_service import (
-            create_student,
-            get_students,
-        )
-
-        slots = [(0, datetime.time(14, 30)), (2, datetime.time(16, 0))]
-        await create_student("Интеграция Тест", clean_tutor, slots)
-
-        students = await get_students(clean_tutor)
-
-        assert len(students) == 1
-        assert students[0].name == "Интеграция Тест"
-        assert len(students[0].slots) == 2
-
-    async def test_slots_saved_with_correct_day_and_time(self, clean_tutor):
-        from tutor_assistant.application.services.students_service import (
-            create_student,
-            get_students,
-        )
-
-        await create_student("Слоты Тест", clean_tutor, [(4, datetime.time(18, 0))])
-
-        students = await get_students(clean_tutor)
-        slot = students[0].slots[0]
-
-        assert slot.day_of_week == 4
-        assert slot.time_start == datetime.time(18, 0)
-
-    async def test_empty_tutor_returns_empty_list(self, clean_tutor):
-        from tutor_assistant.application.services.students_service import get_students
-
-        students = await get_students(clean_tutor)
-        assert students == []
-
-    async def test_multiple_students_all_returned(self, clean_tutor):
-        from tutor_assistant.application.services.students_service import (
-            create_student,
-            get_students,
-        )
-
-        await create_student("Первый", clean_tutor, [(0, datetime.time(9, 0))])
-        await create_student("Второй", clean_tutor, [(1, datetime.time(10, 0))])
-
-        students = await get_students(clean_tutor)
-        names = {s.name for s in students}
-
-        assert names == {"Первый", "Второй"}
+    assert any(s.chat_id == chat_id for s in all_settings)

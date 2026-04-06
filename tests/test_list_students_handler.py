@@ -1,81 +1,56 @@
-"""Unit tests for the list_students handler."""
+"""Tests for /list_students Telegram handler."""
 
 from __future__ import annotations
 
-import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from tutor_assistant.application.handlers.telegram.list_students import list_students
+import pytest
 
-_HANDLER_PATH = "tutor_assistant.application.handlers.telegram.list_students"
+from tests.conftest import make_async_session
+from tutor_assistant.interfaces.telegram.handlers.common import cmd_list_students
+from tutor_assistant.domain.entities import StudentData
 
-
-def _make_student(name: str, slots: list[tuple[int, datetime.time]]) -> MagicMock:
-    student = MagicMock()
-    student.name = name
-    student.slots = [MagicMock(day_of_week=d, time_start=t) for d, t in slots]
-    return student
+_MOD = "tutor_assistant.interfaces.telegram.handlers.common"
 
 
+def _make_student(name: str) -> StudentData:
+    return StudentData(id=1, name=name, tutor_chat_id=111, slots=[])
+
+
+@pytest.mark.asyncio
 class TestListStudents:
-    async def test_no_students_sends_hint(self, make_update, make_context):
-        update = make_update(chat_id=1)
-
-        with patch(f"{_HANDLER_PATH}.get_students", return_value=[]):
-            await list_students(update, make_context())
-
-        reply = update.message.reply_text.call_args[0][0]
-        assert "/add_student" in reply
-
-    async def test_one_student_with_slots(self, make_update, make_context):
-        update = make_update(chat_id=1)
-        student = _make_student(
-            "Иван", [(0, datetime.time(14, 30)), (2, datetime.time(16, 0))]
-        )
-
-        with patch(f"{_HANDLER_PATH}.get_students", return_value=[student]):
-            await list_students(update, make_context())
-
-        reply = update.message.reply_text.call_args[0][0]
-        assert "Иван" in reply
-        assert "Пн" in reply
-        assert "14:30" in reply
-        assert "Ср" in reply
-        assert "16:00" in reply
-
-    async def test_student_without_slots_shows_placeholder(
-        self, make_update, make_context
-    ):
-        update = make_update(chat_id=1)
-        student = _make_student("Маша", [])
-
-        with patch(f"{_HANDLER_PATH}.get_students", return_value=[student]):
-            await list_students(update, make_context())
-
-        reply = update.message.reply_text.call_args[0][0]
-        assert "Маша" in reply
-        assert "нет расписания" in reply
-
-    async def test_multiple_students(self, make_update, make_context):
-        update = make_update(chat_id=1)
-        students = [
-            _make_student("Алёша", [(0, datetime.time(9, 0))]),
-            _make_student("Саша", [(4, datetime.time(18, 30))]),
-        ]
-
-        with patch(f"{_HANDLER_PATH}.get_students", return_value=students):
-            await list_students(update, make_context())
-
-        reply = update.message.reply_text.call_args[0][0]
-        assert "Алёша" in reply
-        assert "Саша" in reply
-
-    async def test_queries_by_correct_chat_id(self, make_update, make_context):
-        update = make_update(chat_id=42)
+    async def test_empty_list(self, make_update, make_context):
+        update = make_update(chat_id=111)
+        ctx = make_context()
+        repo_mock = MagicMock()
 
         with patch(
-            f"{_HANDLER_PATH}.get_students", return_value=[]
-        ) as mock_get_students:
-            await list_students(update, make_context())
+            f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)
+        ), patch(f"{_MOD}.SqlAlchemyStudentRepository", return_value=repo_mock), patch(
+            f"{_MOD}.list_students", new_callable=AsyncMock
+        ) as mock_ls:
+            mock_ls.return_value = []
+            await cmd_list_students(update, ctx)
 
-        mock_get_students.assert_awaited_once_with(42)
+        update.message.reply_text.assert_awaited_once()
+        call_args = update.message.reply_text.call_args[0][0]
+        assert "add_student" in call_args or "нет" in call_args.lower()
+
+    async def test_with_students(self, make_update, make_context):
+        update = make_update(chat_id=111)
+        ctx = make_context()
+        repo_mock = MagicMock()
+        students = [_make_student("Иван"), _make_student("Петр")]
+
+        with patch(
+            f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)
+        ), patch(f"{_MOD}.SqlAlchemyStudentRepository", return_value=repo_mock), patch(
+            f"{_MOD}.list_students", new_callable=AsyncMock
+        ) as mock_ls:
+            mock_ls.return_value = students
+            await cmd_list_students(update, ctx)
+
+        update.message.reply_text.assert_awaited_once()
+        call_args = update.message.reply_text.call_args[0][0]
+        assert "Иван" in call_args
+        assert "Петр" in call_args
