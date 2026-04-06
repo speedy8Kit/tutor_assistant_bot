@@ -8,7 +8,10 @@ import os
 import redis.asyncio as aioredis
 from telegram.ext import ContextTypes, JobQueue
 
-from tutor_assistant.application.use_cases.schedule import ScheduledSlot, get_today_schedule
+from tutor_assistant.application.use_cases.schedule import (
+    ScheduledSlot,
+    get_today_schedule,
+)
 from tutor_assistant.domain.entities import ChatSettingsData
 from tutor_assistant.infrastructure.database.engine import async_session_factory
 from tutor_assistant.infrastructure.database.repository import (
@@ -43,13 +46,16 @@ def _morning_job_name(chat_id: int) -> str:
     return f"morning:{chat_id}"
 
 
-def _preclass_redis_key(chat_id: int, slot_id: int | None, occurrence_date: datetime.date) -> str:
+def _preclass_redis_key(
+    chat_id: int, slot_id: int | None, occurrence_date: datetime.date
+) -> str:
     return f"preclass:sent:{chat_id}:{slot_id}:{occurrence_date.isoformat()}"
 
 
 # ---------------------------------------------------------------------------
 # Callbacks
 # ---------------------------------------------------------------------------
+
 
 async def morning_reminder_callback(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Fires once daily at the configured time. context.job.data = chat_id."""
@@ -83,7 +89,9 @@ async def _fetch_comment(chat_id: int, student_name: str) -> str:
         if student and student.comment:
             return PRE_CLASS_COMMENT_LINE.format(comment=student.comment)
     except Exception:
-        logger.exception("preclass_checker: failed to fetch comment for %s", student_name)
+        logger.exception(
+            "preclass_checker: failed to fetch comment for %s", student_name
+        )
     return ""
 
 
@@ -106,7 +114,9 @@ async def _maybe_send_preclass(
 
     comment_line = ""
     if scheduled.slot.student_name:
-        comment_line = await _fetch_comment(settings.chat_id, scheduled.slot.student_name)
+        comment_line = await _fetch_comment(
+            settings.chat_id, scheduled.slot.student_name
+        )
 
     text = PRE_CLASS_REMINDER.format(
         minutes=settings.pre_class_reminder_minutes,
@@ -151,19 +161,27 @@ async def preclass_checker_callback(context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     for settings in all_settings:
-        if not settings.pre_class_reminder_enabled or not settings.pre_class_reminder_minutes:
+        if (
+            not settings.pre_class_reminder_enabled
+            or not settings.pre_class_reminder_minutes
+        ):
             continue
 
-        target_dt = now + datetime.timedelta(minutes=settings.pre_class_reminder_minutes)
+        target_dt = now + datetime.timedelta(
+            minutes=settings.pre_class_reminder_minutes
+        )
 
         try:
             async with async_session_factory() as session:
                 async with session.begin():
                     slot_repo = SqlAlchemyStudentRepository(session)
-                    today_slots = await get_today_schedule(slot_repo, settings.chat_id, today)
+                    today_slots = await get_today_schedule(
+                        slot_repo, settings.chat_id, today
+                    )
         except Exception:
             logger.exception(
-                "preclass_checker: failed to load slots for chat_id=%s", settings.chat_id
+                "preclass_checker: failed to load slots for chat_id=%s",
+                settings.chat_id,
             )
             continue
 
@@ -177,6 +195,7 @@ async def preclass_checker_callback(context: ContextTypes.DEFAULT_TYPE) -> None:
 # ---------------------------------------------------------------------------
 # Job management
 # ---------------------------------------------------------------------------
+
 
 def schedule_morning_reminder(
     job_queue: JobQueue,

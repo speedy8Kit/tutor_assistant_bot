@@ -195,7 +195,7 @@ class TestGetSchedule:
 class TestGetTodaySchedule:
     async def test_returns_only_todays_slots(self):
         repo = InMemoryStudentRepository()
-        await create_student(repo, TUTOR, "Аня", [_slot(0, 10, 0)])   # Monday
+        await create_student(repo, TUTOR, "Аня", [_slot(0, 10, 0)])  # Monday
         await create_student(repo, TUTOR, "Боря", [_slot(2, 11, 0)])  # Wednesday
         result = await get_today_schedule(repo, TUTOR, today=_MONDAY)
         assert len(result) == 1

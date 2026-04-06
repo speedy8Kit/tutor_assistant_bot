@@ -161,9 +161,7 @@ UPCOMING_HEADER = "Расписание на 7 дней:\n\n"
 MORNING_REMINDER_HEADER = "Доброе утро! Занятия сегодня ({date}):\n\n"
 MORNING_REMINDER_EMPTY = "Доброе утро! Сегодня занятий нет. Хорошего дня!"
 
-PRE_CLASS_REMINDER = (
-    "Напоминание: через {minutes} мин занятие с <b>{student_name}</b> в {time}.{comment_line}"
-)
+PRE_CLASS_REMINDER = "Напоминание: через {minutes} мин занятие с <b>{student_name}</b> в {time}.{comment_line}"
 PRE_CLASS_COMMENT_LINE = "\nКомментарий: {comment}"
 
 # ---------------------------------------------------------------------------
@@ -190,7 +188,9 @@ SETTINGS_ASK_PRE_CLASS_MINUTES = (
     "За сколько минут до занятия отправлять напоминание? (например, <code>30</code>)\n"
     "или /disable чтобы выключить:"
 )
-SETTINGS_INVALID_TIME = "Не понял формат. Введи время как <code>ЧЧ:ММ</code> или /disable:"
+SETTINGS_INVALID_TIME = (
+    "Не понял формат. Введи время как <code>ЧЧ:ММ</code> или /disable:"
+)
 SETTINGS_INVALID_MINUTES = "Введи целое число минут (от 1 до 120) или /disable:"
 SETTINGS_SAVED = "Настройки сохранены."
 SETTINGS_INVALID_CHOICE = "Нет такого пункта. Введи 1 или 2, или /cancel."

@@ -34,9 +34,11 @@ class TestShowSettingsMenu:
         ctx = make_context()
         repo_mock = MagicMock()
 
-        with patch(f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)), \
-             patch(f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock), \
-             patch(f"{_MOD}.get_settings", new_callable=AsyncMock) as mock_get:
+        with patch(
+            f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)
+        ), patch(
+            f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock
+        ), patch(f"{_MOD}.get_settings", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = _settings()
             state = await _show_settings_menu(update, ctx)
 
@@ -49,9 +51,11 @@ class TestShowSettingsMenu:
         ctx = make_context()
         repo_mock = MagicMock()
 
-        with patch(f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)), \
-             patch(f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock), \
-             patch(f"{_MOD}.get_settings", new_callable=AsyncMock) as mock_get:
+        with patch(
+            f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)
+        ), patch(
+            f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock
+        ), patch(f"{_MOD}.get_settings", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = _settings(
                 daily_reminder_enabled=True,
                 daily_reminder_time=datetime.time(7, 0),
@@ -66,9 +70,11 @@ class TestShowSettingsMenu:
         ctx = make_context()
         repo_mock = MagicMock()
 
-        with patch(f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)), \
-             patch(f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock), \
-             patch(f"{_MOD}.get_settings", new_callable=AsyncMock) as mock_get:
+        with patch(
+            f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)
+        ), patch(
+            f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock
+        ), patch(f"{_MOD}.get_settings", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = _settings(
                 pre_class_reminder_enabled=True,
                 pre_class_reminder_minutes=30,
@@ -103,17 +109,23 @@ class TestSetDailyTime:
         ctx.job_queue.get_jobs_by_name = MagicMock(return_value=[])
         repo_mock = MagicMock()
 
-        with patch(f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)), \
-             patch(f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock), \
-             patch(f"{_MOD}.set_daily_reminder", new_callable=AsyncMock) as mock_set, \
-             patch(f"{_MOD}.schedule_morning_reminder") as mock_schedule, \
-             patch(f"{_MOD}.cancel_morning_reminder") as mock_cancel:
+        with patch(
+            f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)
+        ), patch(
+            f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock
+        ), patch(
+            f"{_MOD}.set_daily_reminder", new_callable=AsyncMock
+        ) as mock_set, patch(
+            f"{_MOD}.schedule_morning_reminder"
+        ) as mock_schedule, patch(f"{_MOD}.cancel_morning_reminder") as mock_cancel:
             mock_set.return_value = _settings()
             state = await _set_daily_time(update, ctx)
         return state, mock_set, mock_schedule, mock_cancel
 
     async def test_valid_time_saves_and_schedules(self, make_update, make_context):
-        state, mock_set, mock_schedule, _ = await self._call("07:30", make_update, make_context)
+        state, mock_set, mock_schedule, _ = await self._call(
+            "07:30", make_update, make_context
+        )
         assert state == ConversationHandler.END
         mock_set.assert_called_once()
         args = mock_set.call_args[0]
@@ -121,7 +133,9 @@ class TestSetDailyTime:
         mock_schedule.assert_called_once()
 
     async def test_disable_cancels_job(self, make_update, make_context):
-        state, mock_set, _, mock_cancel = await self._call("/disable", make_update, make_context)
+        state, mock_set, _, mock_cancel = await self._call(
+            "/disable", make_update, make_context
+        )
         assert state == ConversationHandler.END
         args = mock_set.call_args[0]
         assert args[2] is None
@@ -147,9 +161,11 @@ class TestSetPreClassMinutes:
         ctx = make_context()
         repo_mock = MagicMock()
 
-        with patch(f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)), \
-             patch(f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock), \
-             patch(f"{_MOD}.set_pre_class_reminder", new_callable=AsyncMock) as mock_set:
+        with patch(
+            f"{_MOD}.async_session_factory", return_value=make_async_session(repo_mock)
+        ), patch(
+            f"{_MOD}.SqlAlchemyChatSettingsRepository", return_value=repo_mock
+        ), patch(f"{_MOD}.set_pre_class_reminder", new_callable=AsyncMock) as mock_set:
             mock_set.return_value = _settings()
             state = await _set_pre_class_minutes(update, ctx)
         return state, mock_set

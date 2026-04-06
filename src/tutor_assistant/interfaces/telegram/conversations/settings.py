@@ -20,7 +20,9 @@ from tutor_assistant.application.use_cases.settings import (
     set_pre_class_reminder,
 )
 from tutor_assistant.infrastructure.database.engine import async_session_factory
-from tutor_assistant.infrastructure.database.repository import SqlAlchemyChatSettingsRepository
+from tutor_assistant.infrastructure.database.repository import (
+    SqlAlchemyChatSettingsRepository,
+)
 from tutor_assistant.interfaces.shared.messages import (
     ACTION_CANCELLED,
     SETTINGS_ASK_DAILY_TIME,
@@ -45,7 +47,9 @@ SHOW_MENU, SET_DAILY_TIME, SET_PRE_CLASS_MINUTES = range(3)
 _TIME_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
 
 
-async def _show_settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def _show_settings_menu(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     chat_id = update.effective_chat.id
     async with async_session_factory() as session:
         async with session.begin():
@@ -67,7 +71,9 @@ async def _show_settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
         pre_class_status = SETTINGS_PRE_CLASS_DISABLED
 
     await update.message.reply_text(
-        SETTINGS_SHOW.format(daily_status=daily_status, pre_class_status=pre_class_status),
+        SETTINGS_SHOW.format(
+            daily_status=daily_status, pre_class_status=pre_class_status
+        ),
         parse_mode="HTML",
     )
     return SHOW_MENU
@@ -79,7 +85,9 @@ async def _pick_option(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         await update.message.reply_text(SETTINGS_ASK_DAILY_TIME, parse_mode="HTML")
         return SET_DAILY_TIME
     elif choice == "2":
-        await update.message.reply_text(SETTINGS_ASK_PRE_CLASS_MINUTES, parse_mode="HTML")
+        await update.message.reply_text(
+            SETTINGS_ASK_PRE_CLASS_MINUTES, parse_mode="HTML"
+        )
         return SET_PRE_CLASS_MINUTES
     else:
         await update.message.reply_text(SETTINGS_INVALID_CHOICE)
@@ -117,7 +125,9 @@ async def _set_daily_time(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     return ConversationHandler.END
 
 
-async def _set_pre_class_minutes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def _set_pre_class_minutes(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     text = update.message.text.strip()
     chat_id = update.effective_chat.id
 

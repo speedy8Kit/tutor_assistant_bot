@@ -257,7 +257,9 @@ async def test_chat_settings_upsert_updates_existing(clean_settings):
     async with async_session_factory() as session:
         async with session.begin():
             repo = SqlAlchemyChatSettingsRepository(session)
-            await repo.upsert(ChatSettingsData(chat_id=chat_id, daily_reminder_enabled=True))
+            await repo.upsert(
+                ChatSettingsData(chat_id=chat_id, daily_reminder_enabled=True)
+            )
 
     async with async_session_factory() as session:
         async with session.begin():
@@ -297,7 +299,9 @@ async def test_chat_settings_list_all(clean_settings):
     async with async_session_factory() as session:
         async with session.begin():
             repo = SqlAlchemyChatSettingsRepository(session)
-            await repo.upsert(ChatSettingsData(chat_id=chat_id, pre_class_reminder_enabled=True))
+            await repo.upsert(
+                ChatSettingsData(chat_id=chat_id, pre_class_reminder_enabled=True)
+            )
 
     async with async_session_factory() as session:
         async with session.begin():

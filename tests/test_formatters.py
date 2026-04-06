@@ -164,7 +164,9 @@ class TestFormatTodaySchedule:
 
     def test_unknown_name_fallback(self):
         slot = SlotData(day_of_week=0, time_start=datetime.time(10, 0))
-        item = ScheduledSlot(slot=slot, date=_MON, datetime_start=datetime.datetime(2026, 4, 6, 10))
+        item = ScheduledSlot(
+            slot=slot, date=_MON, datetime_start=datetime.datetime(2026, 4, 6, 10)
+        )
         result = html_strip(format_today_schedule([item]))
         assert "?" in result
 

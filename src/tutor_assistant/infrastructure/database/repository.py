@@ -8,7 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from tutor_assistant.domain.entities import ChatSettingsData, SlotData, StudentData
-from tutor_assistant.infrastructure.database.models import ChatSettings, ScheduleSlot, Student
+from tutor_assistant.infrastructure.database.models import (
+    ChatSettings,
+    ScheduleSlot,
+    Student,
+)
 
 
 def _slot_to_data(slot: ScheduleSlot, student_name: str | None = None) -> SlotData:

@@ -73,8 +73,12 @@ class ChatSettings(Base):
     daily_reminder_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
-    daily_reminder_time: Mapped[datetime.time | None] = mapped_column(Time, nullable=True)
+    daily_reminder_time: Mapped[datetime.time | None] = mapped_column(
+        Time, nullable=True
+    )
     pre_class_reminder_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
-    pre_class_reminder_minutes: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    pre_class_reminder_minutes: Mapped[int | None] = mapped_column(
+        SmallInteger, nullable=True
+    )

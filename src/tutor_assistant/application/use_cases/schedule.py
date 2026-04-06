@@ -110,7 +110,9 @@ async def get_upcoming_schedule(
                     ScheduledSlot(
                         slot=s,
                         date=target_date,
-                        datetime_start=datetime.datetime.combine(target_date, s.time_start),
+                        datetime_start=datetime.datetime.combine(
+                            target_date, s.time_start
+                        ),
                     )
                 )
 

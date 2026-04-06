@@ -5,7 +5,10 @@ from __future__ import annotations
 from telegram.ext import Application, CommandHandler
 
 from tutor_assistant.config import BASE_CONFIG
-from tutor_assistant.infrastructure.database.engine import async_session_factory, init_db
+from tutor_assistant.infrastructure.database.engine import (
+    async_session_factory,
+    init_db,
+)
 from tutor_assistant.infrastructure.logging.logger import get_logger
 from tutor_assistant.interfaces.telegram.conversations.add_student import (
     build_handler as build_add_student,
