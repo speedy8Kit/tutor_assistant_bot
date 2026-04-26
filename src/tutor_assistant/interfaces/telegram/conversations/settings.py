@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 import re
 
-from telegram import Update
+from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
     CommandHandler,
     ContextTypes,
@@ -23,6 +23,7 @@ from tutor_assistant.infrastructure.database.engine import async_session_factory
 from tutor_assistant.infrastructure.database.repository import (
     SqlAlchemyChatSettingsRepository,
 )
+from tutor_assistant.interfaces.shared.keyboards import main_menu_keyboard
 from tutor_assistant.interfaces.shared.messages import (
     ACTION_CANCELLED,
     SETTINGS_ASK_DAILY_TIME,
@@ -70,25 +71,43 @@ async def _show_settings_menu(
     else:
         pre_class_status = SETTINGS_PRE_CLASS_DISABLED
 
+    keyboard = ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("Утреннее напоминание")],
+            [KeyboardButton("Напоминание перед занятием")],
+            [KeyboardButton("← В меню")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
     await update.message.reply_text(
         SETTINGS_SHOW.format(
             daily_status=daily_status, pre_class_status=pre_class_status
         ),
         parse_mode="HTML",
+        reply_markup=keyboard,
     )
     return SHOW_MENU
 
 
 async def _pick_option(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     choice = update.message.text.strip()
-    if choice == "1":
-        await update.message.reply_text(SETTINGS_ASK_DAILY_TIME, parse_mode="HTML")
-        return SET_DAILY_TIME
-    elif choice == "2":
+    if choice == "Утреннее напоминание":
         await update.message.reply_text(
-            SETTINGS_ASK_PRE_CLASS_MINUTES, parse_mode="HTML"
+            SETTINGS_ASK_DAILY_TIME,
+            parse_mode="HTML",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return SET_DAILY_TIME
+    elif choice == "Напоминание перед занятием":
+        await update.message.reply_text(
+            SETTINGS_ASK_PRE_CLASS_MINUTES,
+            parse_mode="HTML",
+            reply_markup=ReplyKeyboardRemove(),
         )
         return SET_PRE_CLASS_MINUTES
+    elif choice == "← В меню":
+        return await _cancel(update, context)
     else:
         await update.message.reply_text(SETTINGS_INVALID_CHOICE)
         return SHOW_MENU
@@ -121,7 +140,9 @@ async def _set_daily_time(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     else:
         cancel_morning_reminder(context.job_queue, chat_id)
 
-    await update.message.reply_text(SETTINGS_SAVED)
+    await update.message.reply_text(
+        SETTINGS_SAVED, reply_markup=main_menu_keyboard()
+    )
     return ConversationHandler.END
 
 
@@ -144,18 +165,25 @@ async def _set_pre_class_minutes(
             repo = SqlAlchemyChatSettingsRepository(session)
             await set_pre_class_reminder(repo, chat_id, minutes)
 
-    await update.message.reply_text(SETTINGS_SAVED)
+    await update.message.reply_text(
+        SETTINGS_SAVED, reply_markup=main_menu_keyboard()
+    )
     return ConversationHandler.END
 
 
 async def _cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text(ACTION_CANCELLED)
+    await update.message.reply_text(
+        ACTION_CANCELLED, reply_markup=main_menu_keyboard()
+    )
     return ConversationHandler.END
 
 
 def build_handler() -> ConversationHandler:
     return ConversationHandler(
-        entry_points=[CommandHandler("settings", _show_settings_menu)],
+        entry_points=[
+            CommandHandler("settings", _show_settings_menu),
+            MessageHandler(filters.Text(["Настройки"]), _show_settings_menu),
+        ],
         states={
             SHOW_MENU: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, _pick_option),

@@ -12,6 +12,9 @@ class InMemoryStudentRepository:
         self._students: dict[int, StudentData] = {}
         self._next_id = 1
 
+    async def get_by_id(self, student_id: int) -> StudentData | None:
+        return self._students.get(student_id)
+
     async def get_by_name(self, tutor_chat_id: int, name: str) -> StudentData | None:
         for s in self._students.values():
             if s.tutor_chat_id == tutor_chat_id and s.name == name:

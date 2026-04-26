@@ -44,6 +44,15 @@ class SqlAlchemyStudentRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def get_by_id(self, student_id: int) -> StudentData | None:
+        result = await self._session.execute(
+            select(Student)
+            .where(Student.id == student_id)
+            .options(selectinload(Student.slots))
+        )
+        student = result.scalar_one_or_none()
+        return _student_to_data(student) if student else None
+
     async def get_by_name(self, tutor_chat_id: int, name: str) -> StudentData | None:
         result = await self._session.execute(
             select(Student)

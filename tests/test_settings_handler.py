@@ -92,11 +92,11 @@ class TestPickOption:
         assert state == SHOW_MENU
 
     async def test_choice_1_goes_to_daily(self, make_update, make_context):
-        state = await _pick_option(make_update(text="1"), make_context())
+        state = await _pick_option(make_update(text="Утреннее напоминание"), make_context())
         assert state == SET_DAILY_TIME
 
     async def test_choice_2_goes_to_preclass(self, make_update, make_context):
-        state = await _pick_option(make_update(text="2"), make_context())
+        state = await _pick_option(make_update(text="Напоминание перед занятием"), make_context())
         assert state == SET_PRE_CLASS_MINUTES
 
 

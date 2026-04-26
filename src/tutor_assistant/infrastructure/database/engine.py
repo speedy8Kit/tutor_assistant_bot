@@ -16,10 +16,12 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from tutor_assistant.infrastructure.database.models import Base
+from tutor_assistant.infrastructure.logging.logger import get_logger
 
 _engine: AsyncEngine | None = None
 _session_maker: async_sessionmaker[AsyncSession] | None = None
 
+_logger = get_logger()
 
 def _get_engine() -> AsyncEngine:
     global _engine
@@ -43,5 +45,6 @@ def async_session_factory() -> AsyncSession:
 
 async def init_db() -> None:
     """Create all tables (CREATE TABLE IF NOT EXISTS)."""
+    _logger.info("init database")
     async with _get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

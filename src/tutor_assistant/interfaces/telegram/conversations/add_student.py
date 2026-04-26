@@ -22,6 +22,16 @@ from tutor_assistant.infrastructure.database.repository import (
 from tutor_assistant.interfaces.shared.formatters import (
     format_conflicts,
 )
+from tutor_assistant.interfaces.shared.keyboards import (
+    BTN_CANCEL_ADD,
+    BTN_CONFIRM,
+    BTN_DONE,
+    BTN_SKIP,
+    confirm_add_keyboard,
+    done_keyboard,
+    main_menu_keyboard,
+    skip_keyboard,
+)
 from tutor_assistant.interfaces.shared.messages import (
     ADD_ASK_COMMENT,
     ADD_ASK_NAME,
@@ -83,14 +93,14 @@ async def _received_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return ASK_NAME
 
     _data(context)["name"] = name
-    await update.message.reply_text(ADD_ASK_PHONE)
+    await update.message.reply_text(ADD_ASK_PHONE, reply_markup=skip_keyboard())
     return ASK_PHONE
 
 
 async def _received_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text.strip()
-    _data(context)["phone"] = None if text == "/skip" else text
-    await update.message.reply_text(ADD_ASK_FULL_NAME)
+    _data(context)["phone"] = None if text in ("/skip", BTN_SKIP) else text
+    await update.message.reply_text(ADD_ASK_FULL_NAME, reply_markup=skip_keyboard())
     return ASK_FULL_NAME
 
 
@@ -98,37 +108,40 @@ async def _received_full_name(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> int:
     text = update.message.text.strip()
-    _data(context)["full_name"] = None if text == "/skip" else text
-    await update.message.reply_text(ADD_ASK_COMMENT)
+    _data(context)["full_name"] = None if text in ("/skip", BTN_SKIP) else text
+    await update.message.reply_text(ADD_ASK_COMMENT, reply_markup=skip_keyboard())
     return ASK_COMMENT
 
 
 async def _received_comment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text.strip()
-    _data(context)["comment"] = None if text == "/skip" else text
-    await update.message.reply_text(ADD_ASK_TELEGRAM)
+    _data(context)["comment"] = None if text in ("/skip", BTN_SKIP) else text
+    await update.message.reply_text(ADD_ASK_TELEGRAM, reply_markup=skip_keyboard())
     return ASK_TELEGRAM
 
 
 async def _received_telegram(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text.strip()
-    _data(context)["telegram_link"] = None if text == "/skip" else text
+    _data(context)["telegram_link"] = None if text in ("/skip", BTN_SKIP) else text
     _data(context)["slots"] = []
-    await update.message.reply_text(ADD_ASK_SLOTS, parse_mode="HTML")
+    await update.message.reply_text(ADD_ASK_SLOTS, parse_mode="HTML", reply_markup=done_keyboard())
     return ASK_SLOTS
 
 
 async def _received_slot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     parsed = parse_slot(update.message.text)
     if parsed is None:
-        await update.message.reply_text(ADD_SLOT_FORMAT_ERROR, parse_mode="HTML")
+        await update.message.reply_text(
+            ADD_SLOT_FORMAT_ERROR, parse_mode="HTML", reply_markup=done_keyboard()
+        )
         return ASK_SLOTS
 
     day, t, dur = parsed
     _data(context)["slots"].append(parsed)
     count = len(_data(context)["slots"])
     await update.message.reply_text(
-        ADD_SLOT_ADDED.format(day=DAY_NAMES[day], t=f"{t:%H:%M}", dur=dur, count=count)
+        ADD_SLOT_ADDED.format(day=DAY_NAMES[day], t=f"{t:%H:%M}", dur=dur, count=count),
+        reply_markup=done_keyboard(),
     )
     return ASK_SLOTS
 
@@ -148,7 +161,7 @@ async def _slots_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         extra = _build_extra(d)
         msg = ADD_CONFIRM_NO_SLOTS.format(name=name, extra=extra)
 
-    await update.message.reply_text(msg, parse_mode="HTML")
+    await update.message.reply_text(msg, parse_mode="HTML", reply_markup=confirm_add_keyboard())
     return CONFIRM
 
 
@@ -187,20 +200,23 @@ async def _confirmed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             parse_mode="HTML",
         )
         d["slots"] = []
-        await update.message.reply_text(ADD_ASK_SLOTS, parse_mode="HTML")
+        await update.message.reply_text(
+            ADD_ASK_SLOTS, parse_mode="HTML", reply_markup=done_keyboard()
+        )
         return ASK_SLOTS
 
     context.user_data.pop(_KEY, None)
     await update.message.reply_text(
         ADD_SAVED.format(name=student.name, count=len(student.slots)),
         parse_mode="HTML",
+        reply_markup=main_menu_keyboard(),
     )
     return ConversationHandler.END
 
 
 async def _cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.pop(_KEY, None)
-    await update.message.reply_text(ACTION_CANCELLED)
+    await update.message.reply_text(ACTION_CANCELLED, reply_markup=main_menu_keyboard())
     return ConversationHandler.END
 
 
@@ -219,7 +235,10 @@ def _build_extra(d: dict) -> str:
 
 def build_handler() -> ConversationHandler:
     return ConversationHandler(
-        entry_points=[CommandHandler("add_student", _start)],
+        entry_points=[
+            CommandHandler("add_student", _start),
+            MessageHandler(filters.Text(["Добавить ученика"]), _start),
+        ],
         states={
             ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, _received_name)],
             ASK_PHONE: [
@@ -239,10 +258,15 @@ def build_handler() -> ConversationHandler:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, _received_telegram),
             ],
             ASK_SLOTS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, _received_slot),
                 CommandHandler("done", _slots_done),
+                MessageHandler(filters.Text([BTN_DONE]), _slots_done),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, _received_slot),
             ],
-            CONFIRM: [CommandHandler("confirm", _confirmed)],
+            CONFIRM: [
+                CommandHandler("confirm", _confirmed),
+                MessageHandler(filters.Text([BTN_CONFIRM]), _confirmed),
+                MessageHandler(filters.Text([BTN_CANCEL_ADD]), _cancel),
+            ],
         },
         fallbacks=[CommandHandler("cancel", _cancel)],
         name="add_student",

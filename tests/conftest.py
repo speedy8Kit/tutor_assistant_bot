@@ -16,8 +16,29 @@ def make_update():
     ) -> MagicMock:
         update = MagicMock(spec=Update)
         update.message.text = text
-        update.message.reply_text = AsyncMock()
+        update.message.reply_text = AsyncMock(return_value=MagicMock(message_id=99))
         update.effective_chat.id = chat_id
+        update.callback_query = None
+        update.effective_message = update.message
+        return update
+
+    return _factory
+
+
+@pytest.fixture
+def make_callback_update():
+    def _factory(data: str, chat_id: int = 111) -> MagicMock:
+        update = MagicMock(spec=Update)
+        update.effective_chat.id = chat_id
+        update.message = None
+        query = MagicMock()
+        query.data = data
+        query.answer = AsyncMock()
+        query.edit_message_text = AsyncMock()
+        query.message.reply_text = AsyncMock(return_value=MagicMock(message_id=99))
+        query.message.message_id = 42
+        update.callback_query = query
+        update.effective_message = query.message
         return update
 
     return _factory

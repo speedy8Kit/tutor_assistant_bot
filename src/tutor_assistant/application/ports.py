@@ -10,6 +10,10 @@ from tutor_assistant.domain.entities import ChatSettingsData, SlotData, StudentD
 class IStudentRepository(Protocol):
     """Async repository interface for Student aggregate."""
 
+    async def get_by_id(self, student_id: int) -> StudentData | None:
+        """Return student by primary key, or None."""
+        ...
+
     async def get_by_name(self, tutor_chat_id: int, name: str) -> StudentData | None:
         """Return student by name for the given tutor, or None."""
         ...

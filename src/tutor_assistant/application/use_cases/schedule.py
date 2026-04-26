@@ -9,8 +9,9 @@ from tutor_assistant.application.ports import IStudentRepository
 from tutor_assistant.domain.entities import SlotData, StudentData
 from tutor_assistant.domain.exceptions import SlotConflict, StudentNotFound
 from tutor_assistant.domain.schedule import check_conflicts
+from tutor_assistant.infrastructure.logging.logger import get_logger
 
-
+_logger = get_logger()
 @dataclass
 class ScheduledSlot:
     """A SlotData annotated with its concrete occurrence date."""
@@ -28,6 +29,7 @@ async def get_schedule(
     Raises:
         StudentNotFound: if not found.
     """
+    
     student = await repo.get_by_name(tutor_id, student_name)
     if student is None:
         raise StudentNotFound(student_name)

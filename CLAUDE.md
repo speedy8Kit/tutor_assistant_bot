@@ -1,166 +1,172 @@
 # CLAUDE.md
 
-Guidance for Claude Code when working in this repository.
+Инструкции для Claude Code при работе с этим репозиторием.
 
 ---
 
-## Project Overview
+## Язык
 
-Telegram bot for private tutors: manages appointments, student reminders, and schedules.
-Stack: Python 3.12, python-telegram-bot (async), PostgreSQL 15, Redis 7, Poetry, Docker.
-
----
-
-## ABSOLUTE RULES
-
-These rules are non-negotiable and override all default behaviors.
-
-1. **Never run Python on the host.** No `python`, `poetry run`, `pip install`, or `poetry install` on the host machine.
-2. **Never install packages manually** inside a running container. All dependencies must be declared in `pyproject.toml` and installed via the Dockerfile build.
-3. **Never modify a running container** as a substitute for updating source files. The container is ephemeral — manual changes are lost on restart.
-4. **Always assume the Docker environment.** Every command suggestion must use `docker-compose` or `docker exec`.
-5. **Never suggest `pip install` or `apt install`** outside of the Dockerfile.
-
-Violation of any rule above produces an unreproducible environment.
+Все планы, документация и общение с пользователем ведётся на **русском языке**.
 
 ---
 
-## Services
+## Обзор проекта
 
-| Service | Container name | Purpose |
+Telegram-бот для репетиторов: управление расписанием, данными учеников и напоминаниями.
+Стек: Python 3.12, python-telegram-bot (async), PostgreSQL 15, Redis 7, Poetry, Docker.
+
+---
+
+## АБСОЛЮТНЫЕ ПРАВИЛА
+
+Эти правила не обсуждаются и имеют приоритет над всеми остальными инструкциями.
+
+1. **Никогда не запускать Python на хосте.** Запрещены `python`, `poetry run`, `pip install`, `poetry install` вне контейнера.
+2. **Никогда не устанавливать пакеты вручную** внутри работающего контейнера. Все зависимости объявляются в `pyproject.toml` и устанавливаются через сборку Dockerfile.
+3. **Никогда не изменять работающий контейнер** вместо редактирования исходников. Контейнер эфемерен — ручные изменения теряются при перезапуске.
+4. **Всегда предполагать Docker-окружение.** Все команды должны использовать `docker-compose` или `docker exec`.
+5. **Никогда не предлагать `pip install` или `apt install`** вне контекста Dockerfile.
+
+Нарушение любого из правил делает окружение невоспроизводимым.
+
+---
+
+## Сервисы
+
+| Сервис | Имя контейнера | Назначение |
 |---|---|---|
-| `dev` | `tutor-bot` | Interactive shell for development |
-| `inference` | `tutor-bot-inference` | Runs the bot (`python -m tutor_assistant`) |
-| `postgres` | `tutor-postgres` | PostgreSQL 15 database |
-| `redis` | `tutor-redis` | Redis 7 cache / job queue |
+| `dev` | `tutor-bot` | Интерактивная оболочка для разработки |
+| `inference` | `tutor-bot-inference` | Запуск бота (`python -m tutor_assistant`) |
+| `postgres` | `tutor-postgres` | База данных PostgreSQL 15 |
+| `redis` | `tutor-redis` | Redis 7 — кэш / очередь задач |
 
-The `dev` container mounts the repo at `/app` (live reload of source edits — no rebuild needed for `.py` changes). The `inference` container does **not** mount the repo.
+Контейнер `dev` монтирует репозиторий в `/app` (изменения `.py`-файлов отражаются мгновенно — пересборка не нужна). Контейнер `inference` **не** монтирует репозиторий.
 
 ---
 
-## Canonical Commands
+## Основные команды
 
-### Start the stack
+### Запуск стека
 
 ```bash
-# Start all services (dev shell + bot + postgres + redis)
+# Запустить все сервисы (dev-оболочка + бот + postgres + redis)
 docker-compose up -d
 
-# Attach to the dev shell
+# Подключиться к dev-оболочке
 docker exec -it tutor-bot bash
 ```
 
-### Run the bot (inference)
+### Запуск бота (inference)
 
 ```bash
 docker-compose up inference
 ```
 
-### Execute a one-off command inside the container
+### Разовая команда внутри контейнера
 
 ```bash
-docker exec tutor-bot <command>
+docker exec tutor-bot <команда>
 
-# Examples
+# Примеры
 docker exec tutor-bot python -m tutor_assistant
 docker exec tutor-bot pytest
 docker exec tutor-bot alembic upgrade head
 ```
 
-### Rebuild the image
+### Пересборка образа
 
 ```bash
 docker-compose build
-# or for a specific service
+# или для конкретного сервиса
 docker-compose build dev
 ```
 
-### Stop and clean up
+### Остановка и очистка
 
 ```bash
-docker-compose down          # stop containers, keep volumes
-docker-compose down -v       # stop containers + delete volumes (destructive)
+docker-compose down          # остановить контейнеры, сохранить volumes
+docker-compose down -v       # остановить контейнеры + удалить volumes (деструктивно)
 ```
 
 ---
 
-## When a Rebuild Is Required
+## Когда нужна пересборка
 
-Rebuild the container image whenever any of the following change:
+Пересобирать образ необходимо при изменении следующих файлов:
 
-| Changed file | Rebuild required |
+| Изменённый файл | Нужна пересборка |
 |---|---|
-| `Dockerfile` | Yes — always |
-| `pyproject.toml` | Yes — dependency graph changed |
-| `poetry.lock` | Yes — pinned versions changed |
-| `*.py` source files | **No** — volume mount reflects changes immediately |
-| `.env` / `ConfigDev.toml` | **No** — loaded at runtime |
+| `Dockerfile` | Да — всегда |
+| `pyproject.toml` | Да — изменился граф зависимостей |
+| `poetry.lock` | Да — изменились закреплённые версии |
+| `*.py` исходники | **Нет** — volume-монтирование отражает изменения сразу |
+| `.env` / `ConfigDev.toml` | **Нет** — загружается в runtime |
 
-**Rebuild command:**
+**Команда пересборки:**
 ```bash
 docker-compose build && docker-compose up -d
 ```
 
-Claude must explicitly tell the user to rebuild when a change to a rebuild-triggering file is made.
+Claude должен явно сообщать пользователю о необходимости пересборки при изменении соответствующих файлов.
 
 ---
 
-## Development Workflow
+## Рабочий процесс разработки
 
 ```
-Edit source → (rebuild if needed) → exec command in container → observe output
+Редактировать исходники → (пересборка если нужно) → exec команды в контейнере → наблюдать результат
 ```
 
-1. Edit files on the host with your editor.
-2. If `pyproject.toml`, `poetry.lock`, or `Dockerfile` changed → rebuild.
-3. Run commands via `docker exec tutor-bot <cmd>` or inside the attached shell.
-4. Source changes in `src/` are reflected immediately via the volume mount.
+1. Редактировать файлы на хосте в редакторе.
+2. Если изменились `pyproject.toml`, `poetry.lock` или `Dockerfile` → пересборка.
+3. Запускать команды через `docker exec tutor-bot <cmd>` или внутри подключённой оболочки.
+4. Изменения в `src/` отражаются мгновенно через volume-монтирование.
 
 ---
 
-## Dependency Management
+## Управление зависимостями
 
-All dependencies are managed through Poetry inside the container.
+Все зависимости управляются через Poetry внутри контейнера.
 
 ```bash
-# Add a new dependency (run inside container)
-docker exec tutor-bot poetry add <package>
+# Добавить зависимость (выполнять внутри контейнера)
+docker exec tutor-bot poetry add <пакет>
 
-# After adding, commit pyproject.toml and poetry.lock, then rebuild
+# После добавления — закоммитить pyproject.toml и poetry.lock, затем пересобрать
 docker-compose build
 ```
 
-Never run `poetry install` or `pip install` on the host.
+Никогда не запускать `poetry install` или `pip install` на хосте.
 
 ---
 
-## Testing
+## Тестирование
 
-All tests run inside the container.
+Все тесты запускаются внутри контейнера.
 
 ```bash
-# Run all tests
+# Запустить все тесты
 docker exec tutor-bot pytest
 
-# Run a single test
+# Запустить один тест
 docker exec tutor-bot pytest tests/path/to/test_file.py::test_name
 
-# Run with coverage
+# Запустить с покрытием
 docker exec tutor-bot pytest --cov=tutor_assistant
 ```
 
-### Testing guidelines
+### Правила тестирования
 
-- Use `pytest` as the test runner.
-- Mock all external services (Telegram API, PostgreSQL, Redis) — do not depend on live services in unit tests.
-- Integration tests that require PostgreSQL or Redis should use the services defined in `docker-compose.yml` and run inside the container.
-- Test files live in `tests/` at the repo root.
+- Использовать `pytest` как тест-раннер.
+- Мокировать все внешние сервисы (Telegram API, PostgreSQL, Redis) — не зависеть от живых сервисов в юнит-тестах.
+- Интеграционные тесты, требующие PostgreSQL или Redis, должны использовать сервисы из `docker-compose.yml` и запускаться внутри контейнера.
+- Тестовые файлы находятся в `tests/` в корне репозитория.
 
 ---
 
-## Linting and Formatting
+## Линтинг и форматирование
 
-Run inside the container:
+Запускать внутри контейнера:
 
 ```bash
 docker exec tutor-bot black src/ scripts/
@@ -169,7 +175,7 @@ docker exec tutor-bot ruff check src/ scripts/
 docker exec tutor-bot mypy src/
 ```
 
-Or in one pass via pre-commit (still inside the container):
+Или за один проход через pre-commit (тоже внутри контейнера):
 
 ```bash
 docker exec tutor-bot pre-commit run --all-files
@@ -177,71 +183,71 @@ docker exec tutor-bot pre-commit run --all-files
 
 ---
 
-## Database Migrations (Alembic)
+## Миграции базы данных (Alembic)
 
 ```bash
-# Apply all pending migrations
+# Применить все ожидающие миграции
 docker exec tutor-bot alembic upgrade head
 
-# Create a new migration
-docker exec tutor-bot alembic revision --autogenerate -m "description"
+# Создать новую миграцию
+docker exec tutor-bot alembic revision --autogenerate -m "описание"
 ```
 
 ---
 
-## Environment Variables
+## Переменные окружения
 
-Declared in `.env` (copy from `.env.example`). Loaded automatically by `docker-compose`.
+Объявляются в `.env` (скопировать из `.env.example`). Загружаются автоматически через `docker-compose`.
 
-| Variable | Description |
+| Переменная | Описание |
 |---|---|
-| `BOT_TOKEN` | Telegram bot token |
+| `BOT_TOKEN` | Токен Telegram-бота |
 | `DATABASE_URL` | `postgresql+asyncpg://abmine:abmine@postgres:5432/tutor_bot` |
 | `REDIS_URL` | `redis://redis:6379/0` |
-| `APP_CONFIG_FILE` | Path to TOML config (default: `ConfigDev.toml`) |
+| `APP_CONFIG_FILE` | Путь к TOML-конфигу (по умолчанию: `ConfigDev.toml`) |
 
 ---
 
-## Architecture
+## Архитектура
 
 ```
 src/tutor_assistant/
-├── config.py        # AppConfig — TOML config loaded via APP_CONFIG_FILE
-├── bot.py           # TutorBot — builds Application, wires handlers
-├── init_bot.py      # Low-level bot initialization
-├── database/        # SQLAlchemy async models + engine (in progress)
-├── handlers/        # Telegram update handlers (in progress)
-├── core/            # Business logic (in progress)
+├── config.py        # AppConfig — TOML-конфиг, загружаемый через APP_CONFIG_FILE
+├── bot.py           # TutorBot — сборка Application, подключение обработчиков
+├── init_bot.py      # Низкоуровневая инициализация бота
+├── database/        # SQLAlchemy async-модели + engine (в разработке)
+├── handlers/        # Обработчики Telegram-обновлений (в разработке)
+├── core/            # Бизнес-логика (в разработке)
 ├── utils/
-│   └── logger.py    # get_logger() — JSON or text logger
-└── __main__.py      # Entry point
+│   └── logger.py    # get_logger() — JSON или текстовый логгер
+└── __main__.py      # Точка входа
 ```
 
-**Config flow:** `.env` → `AppConfig` (from TOML) → frozen dataclasses (`BotConfigs`, `MainConfig`).
+**Поток конфигурации:** `.env` → `AppConfig` (из TOML) → замороженные датаклассы (`BotConfigs`, `MainConfig`).
 
-**Async:** All handlers and DB calls are async. `telegram.ext.Application` handlers must be `async def`.
+**Async:** Все обработчики и вызовы БД — async. Обработчики `telegram.ext.Application` должны быть `async def`.
 
 ---
 
-## Anti-Patterns — Never Do These
+## Антипаттерны — никогда так не делать
 
-| Anti-pattern | Correct alternative |
+| Антипаттерн | Правильная альтернатива |
 |---|---|
-| `python script.py` on host | `docker exec tutor-bot python script.py` |
-| `poetry install` on host | Declare in `pyproject.toml`, rebuild image |
-| `pip install <pkg>` anywhere | `docker exec tutor-bot poetry add <pkg>`, then rebuild |
-| `apt install` on host or in running container | Add to `Dockerfile`, rebuild |
-| Editing files inside the container | Edit on host (volume mount syncs automatically) |
-| Running tests on host | `docker exec tutor-bot pytest` |
+| `python script.py` на хосте | `docker exec tutor-bot python script.py` |
+| `poetry install` на хосте | Объявить в `pyproject.toml`, пересобрать образ |
+| `pip install <pkg>` где угодно | `docker exec tutor-bot poetry add <pkg>`, затем пересборка |
+| `apt install` на хосте или в контейнере | Добавить в `Dockerfile`, пересобрать |
+| Редактировать файлы внутри контейнера | Редактировать на хосте (volume-монтирование синхронизирует автоматически) |
+| Запускать тесты на хосте | `docker exec tutor-bot pytest` |
 
 ---
 
-## Assistant Response Rules
+## Правила ответов ассистента
 
-When suggesting commands or changes, Claude must:
+При предложении команд или изменений Claude должен:
 
-1. Always use `docker exec tutor-bot <cmd>` or `docker-compose` — never bare host commands.
-2. Explicitly state "**Rebuild required:** `docker-compose build && docker-compose up -d`" whenever `Dockerfile`, `pyproject.toml`, or `poetry.lock` is modified.
-3. Never suggest `pip install`, `poetry install`, or `apt install` outside of Dockerfile context.
-4. Assume the `dev` container (`tutor-bot`) is running when suggesting exec commands.
-5. When adding a new dependency, always remind the user to commit `pyproject.toml` + `poetry.lock` and rebuild.
+1. Всегда использовать `docker exec tutor-bot <cmd>` или `docker-compose` — никогда голые команды на хосте.
+2. Явно писать "**Требуется пересборка:** `docker-compose build && docker-compose up -d`" при изменении `Dockerfile`, `pyproject.toml` или `poetry.lock`.
+3. Никогда не предлагать `pip install`, `poetry install` или `apt install` вне контекста Dockerfile.
+4. Предполагать, что контейнер `dev` (`tutor-bot`) запущен при предложении exec-команд.
+5. При добавлении новой зависимости напоминать пользователю закоммитить `pyproject.toml` + `poetry.lock` и пересобрать.

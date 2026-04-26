@@ -1,6 +1,9 @@
 -- Создание расширений
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Тестовая база данных (изолирована от продакшн)
+CREATE DATABASE tutor_bot_test OWNER abmine;
+
 -- Создание схемы (опционально)
 -- CREATE SCHEMA IF NOT EXISTS tutor;
 
